@@ -1,25 +1,101 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "PA1_template"
+author: "Michael Kolb"
+date: "December 10, 2017"
+output:
+  html_document: default
+  pdf_document: default
 ---
 
+Load and process the data
 
-## Loading and preprocessing the data
+```{r}
+data <- read.csv("activity.csv")
+data$date <- as.Date(data$date)
+cdata <- data[!is.na(data$steps),]
+```
 
+Calculate the total number of steps taken per day
 
+```{r}
+sumSteps <- tapply(cdata$steps, cdata$date, sum)
+```
 
-## What is mean total number of steps taken per day?
+Make a histogram of the total number of steps taken each day
 
+```{r}
+hist(sumSteps, xlab="Steps", main="Total Steps per Day")
+```
 
+Report mean and median of the total number of steps taken per day
 
-## What is the average daily activity pattern?
+```{r}
+mean(sumSteps)
+median(sumSteps)
+```
 
+Make a time series plot of the 5-min interval and the average number of steps
 
+```{r}
+avgSteps <- aggregate(cdata$steps, by=list(cdata$interval), FUN=mean)
+names(avgSteps) <- c("Interval", "Mean")
+plot(avgSteps$Interval, avgSteps$Mean, type="l", xlab="Interval", 
+	ylab="Average Number of Steps", main="Average Steps per Interval")
+```
 
-## Imputing missing values
+Identify minute interval that contains maximum number of steps
 
+```{r}
+avgSteps[which.max(avgSteps$Mean), ]$Interval
+```
 
+Calculate and report the total number of missing values in the dataset
 
-## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+sum(is.na(data$steps))
+```
+
+Create a new dataset equal to original dataset with missing data filled in
+
+```{r}
+idata <- avgSteps$Mean[match(cdata$interval, avgSteps$Interval)]
+imputedSteps <- transform(data, steps= ifelse(is.na(data$steps), yes= idata,
+	no= data$steps))
+totalSteps <- aggregate(steps ~ date, imputedSteps, sum)
+names(totalSteps) <- c("Date","Steps")
+```
+
+Make a histogram of the total number of steps taken each day
+
+```{r}
+hist(totalSteps$Steps, xlab="Steps", main="Total Steps per day")
+```
+
+Report mean and median total number of steps taken per day
+
+```{r}
+mean(totalSteps$Steps)
+median(totalSteps$Steps)
+```
+
+Create factor variable with two levels indicating weekday or weekend day
+
+```{r}
+totSteps <- aggregate(steps ~ interval + date, imputedSteps, sum)
+totSteps$dayType <- as.factor(sapply(totSteps$date, function(x) {
+	if (weekdays(x)=="Saturday" | weekdays(x)=="Sunday")
+	y <- "Weekend" else
+	y <- "Weekday"
+	y
+}))
+```
+
+Make panel plot of 5-min interval & avg steps across weekday / weekend days
+
+```{r}
+par(mfrow= c(2,1))
+with(totSteps[totSteps$dayType=="Weekend",], plot(aggregate(steps ~ interval,
+	FUN=mean), type="l", main="Weekend Activity Pattern"))
+with(totSteps[totSteps$dayType=="Weekday",], plot(aggregate(steps ~ interval,
+	FUN=mean), type="l", main="Weekday Activity Pattern"))
+```
