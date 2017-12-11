@@ -2,9 +2,9 @@
 title: "PA1_template"
 author: "Michael Kolb"
 date: "December 10, 2017"
-output:
-  html_document: default
-  pdf_document: default
+output: 
+  md_document:
+    variant: markdown_github
 ---
 
 Load and process the data
